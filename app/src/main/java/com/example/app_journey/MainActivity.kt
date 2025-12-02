@@ -35,7 +35,6 @@ import com.example.app_journey.service.RetrofitInstance
 import com.example.app_journey.utils.SharedPrefHelper
 import kotlinx.coroutines.launch
 
-
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,15 +50,18 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppContent() {
+
     var usuarioLogado by remember { mutableStateOf<Usuario?>(null) }
     var carregandoUsuario by remember { mutableStateOf(true) }
-    val idUsuarioLogado = usuarioLogado?.id_usuario ?: -1
 
+    val idUsuarioLogado = usuarioLogado?.id_usuario ?: -1
 
     val navController = rememberNavController()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    // 🔹 Carrega usuário salvo no SharedPreferences ao abrir o app
     LaunchedEffect(Unit) {
         val idSalvo = SharedPrefHelper.recuperarIdUsuario(context)
         Log.d("MainActivity", "ID salvo: $idSalvo")
@@ -68,6 +70,7 @@ fun AppContent() {
             try {
                 val result = RetrofitInstance.usuarioService.getUsuarioPorIdSuspend(idSalvo)
                 Log.d("MainActivity", "Resposta API: $result")
+
                 if (!result.usuario.isNullOrEmpty()) {
                     usuarioLogado = result.usuario[0]
                     Log.d("MainActivity", "Usuário carregado: ${usuarioLogado?.nome_completo}")
@@ -78,19 +81,25 @@ fun AppContent() {
                 Log.e("MainActivity", "Erro de rede: ${e.message}")
             }
         } else {
-            Log.w("MainActivity", "id_usuario não encontrado")
+            Log.w("MainActivity", "Nenhum id_usuario encontrado no SharedPrefs")
         }
+
         carregandoUsuario = false
     }
 
-
-    // Observa a rota atual
+    // Observa rota atual
     val navBackStackEntry = navController.currentBackStackEntryAsState()
     val rotaAtual = navBackStackEntry.value?.destination?.route
 
     // Rotas que exibem AppBar + Drawer
-    val rotasComBarra = listOf("profile", "home/{idUsuario}", "criar_grupo", "editar_info/{idUsuario}", "meus_grupos", "ebooks")
-
+    val rotasComBarra = listOf(
+        "profile",
+        "home/{idUsuario}",
+        "criar_grupo",
+        "editar_info/{idUsuario}",
+        "meus_grupos",
+        "ebooks"
+    )
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -102,12 +111,9 @@ fun AppContent() {
                     scope.launch { drawerState.close() }
                 }
             )
-
-
         },
         gesturesEnabled = drawerState.isOpen
-    )
-    {
+    ) {
         Scaffold(
             topBar = {
                 if (rotaAtual in rotasComBarra) {
@@ -129,9 +135,7 @@ fun AppContent() {
                                                     }
                                                 }
                                             }
-
                                         }
-
                                 ) {
                                     Image(
                                         painter = painterResource(id = R.drawable.logoclaro),
@@ -147,7 +151,9 @@ fun AppContent() {
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            IconButton(onClick = {
+                                scope.launch { drawerState.open() }
+                            }) {
                                 Icon(Icons.Filled.Menu, contentDescription = "Menu")
                             }
                         },
@@ -159,17 +165,20 @@ fun AppContent() {
                     )
                 }
             }
-        ) { paddingValues ->
+        ) { padding ->
+
             NavHost(
                 navController = navController,
                 startDestination = "tela_inicial",
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(padding)
             ) {
-                // Rotas existentes
+
+                // -------- Telas principais --------
                 composable("tela_inicial") { TelaInicial(navController) }
                 composable("login") { Login(navController) }
                 composable("cadastro") { Cadastro(navController) }
                 composable("recuperacao_senha") { RecuperacaoSenha(navController) }
+
                 composable("home/{idUsuario}") { backStack ->
                     val idUsuario = backStack.arguments?.getString("idUsuario")!!.toInt()
                     Home(navController, idUsuario)
@@ -179,111 +188,85 @@ fun AppContent() {
                 composable("criar_grupo") { CriarGrupo(navegacao = navController) }
                 composable("meus_grupos") { MeusGrupos(navController) }
 
-                composable("editar_info/{idUsuario}") { backStackEntry ->
-                    val idUsuario = backStackEntry.arguments?.getString("idUsuario")?.toIntOrNull()
+                composable("editar_info/{idUsuario}") { backStack ->
+                    val idUsuario = backStack.arguments?.getString("idUsuario")?.toIntOrNull()
                     EditarInfoWrapper(navController, idUsuario)
-                }//edição do perfil
-
-                composable(
-                    route = "grupoinfo/{id}",
-                ) { backStackEntry ->
-                    val grupoId = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
-                    GrupoInfo(navController = navController, grupoId = grupoId)
-                }
-                composable("home_grupo/{grupoId}/{idUsuario}") { backStackEntry ->
-                    val grupoId = backStackEntry.arguments?.getString("grupoId")?.toIntOrNull() ?: 0
-                    val idUsuario = backStackEntry.arguments?.getString("idUsuario")?.toIntOrNull() ?: 0
-                    HomeGrupo(navController = navController, grupoId = grupoId, idUsuario = idUsuario)
                 }
 
-                composable("calendario/{grupoId}/{idUsuario}") { backStackEntry ->
-                    val grupoId = backStackEntry.arguments?.getString("grupoId")?.toIntOrNull() ?: 0
-                    val idUsuario = backStackEntry.arguments?.getString("idUsuario")?.toIntOrNull() ?: 0
-                    Calendario(navController = navController, grupoId = grupoId, idUsuario = idUsuario)
+                // ------------------ Infos do grupo ------------------
+                composable("grupoinfo/{id}") { entry ->
+                    val grupoId = entry.arguments?.getString("id")?.toIntOrNull() ?: 0
+                    GrupoInfo(navController, grupoId)
                 }
+
+                composable("home_grupo/{grupoId}/{idUsuario}") { entry ->
+                    val grupoId = entry.arguments?.getString("grupoId")?.toIntOrNull() ?: 0
+                    val idUsuario = entry.arguments?.getString("idUsuario")?.toIntOrNull() ?: 0
+                    HomeGrupo(navController, grupoId, idUsuario)
+                }
+
+                composable("calendario/{grupoId}/{idUsuario}") { entry ->
+                    val grupoId = entry.arguments?.getString("grupoId")?.toIntOrNull() ?: 0
+                    val idUsuario = entry.arguments?.getString("idUsuario")?.toIntOrNull() ?: 0
+                    Calendario(navController, grupoId, idUsuario)
+                }
+
                 composable("meu_calendario") {
-                    val context = LocalContext.current
-                    val idUsuario = SharedPrefHelper.recuperarIdUsuario(context) ?: -1
-                    CalendarioPessoal(navController = navController, idUsuario = idUsuario)
+                    val idUsuario = SharedPrefHelper.recuperarIdUsuario(LocalContext.current) ?: -1
+                    CalendarioPessoal(navController, idUsuario)
                 }
 
-                composable("conversasPrivadas/{idUsuario}") { backStack ->
-                    val idUsuario = backStack.arguments?.getString("idUsuario")!!.toInt()
+                // ------------------ Conversas ------------------
+                composable("conversasPrivadas/{idUsuario}") { entry ->
+                    val idUsuario = entry.arguments?.getString("idUsuario")!!.toInt()
                     ConversasPrivadasScreen(navController, idUsuario)
                 }
 
-                composable("chatPrivado/{id}/{nome}/{idUsuario}") { backStack ->
-                    val chatId = backStack.arguments?.getString("id")!!.toInt()
-                    val nome = backStack.arguments?.getString("nome")!!
-                    val idUsuario = backStack.arguments?.getString("idUsuario")!!.toInt()
-
-                    ChatPrivadoScreen(
-                        navController = navController,
-                        idChatRoom = chatId,
-                        idUsuario = idUsuario,
-                        nomeOutroUsuario = nome
-                    )
+                composable("chatPrivado/{id}/{nome}/{idUsuario}") { entry ->
+                    val chatId = entry.arguments?.getString("id")!!.toInt()
+                    val nome = entry.arguments?.getString("nome")!!
+                    val idUsuario = entry.arguments?.getString("idUsuario")!!.toInt()
+                    ChatPrivadoScreen(navController, chatId, idUsuario, nome)
                 }
 
-
-
-                composable("chat_grupo/{grupoId}") { backStackEntry ->
-                    val grupoId = backStackEntry.arguments?.getString("grupoId")?.toIntOrNull() ?: 0
-
-                    val context = LocalContext.current
+                composable("chat_grupo/{grupoId}") { entry ->
+                    val grupoId = entry.arguments?.getString("grupoId")!!.toInt()
                     val idUsuarioAtual = SharedPrefHelper.recuperarIdUsuario(context) ?: -1
-
-                    ChatGrupo(
-                        navController = navController,
-                        grupoId = grupoId,
-                        idUsuarioAtual = idUsuarioAtual
-                    )
+                    ChatGrupo(navController, grupoId, idUsuarioAtual)
                 }
 
-
-
-                composable("verificar_email/{email}") { backStackEntry ->
-                    val email = backStackEntry.arguments?.getString("email")
-                    email?.let { VerificarEmail(navController, it) }
+                // ------------------ Recuperar senha ------------------
+                composable("verificar_email/{email}") { entry ->
+                    entry.arguments?.getString("email")?.let {
+                        VerificarEmail(navController, it)
+                    }
                 }
 
-                composable("redefinir_senha/{idUsuario}") { backStackEntry ->
-                    val idUsuario = backStackEntry.arguments?.getString("idUsuario")?.toIntOrNull()
-                    idUsuario?.let { RedefinirSenha(navController, it) }
+                composable("redefinir_senha/{idUsuario}") { entry ->
+                    entry.arguments?.getString("idUsuario")?.toIntOrNull()?.let {
+                        RedefinirSenha(navController, it)
+                    }
                 }
 
-                //Ebooks
-
-                // Tela inicial: lista de e-books
+                // ------------------ EBOOKS ------------------
                 composable("ebooks") {
                     TelaEbooksScreen(
-                        onEbookClick = { id ->
-                            navController.navigate("ebook_detalhe/$id")
-                        },
-                        onCriarClick = {
-                            navController.navigate("ebook_cadastrar")
-                        },
-                        onCarrinhoClick = {
-                            navController.navigate("ebook_carrinho")
-                        },
+                        onEbookClick = { id -> navController.navigate("ebook_detalhe/$id") },
+                        onCriarClick = { navController.navigate("ebook_cadastrar") },
+                        onCarrinhoClick = { navController.navigate("ebook_carrinho") },
                         ebookService = RetrofitInstance.ebookService
                     )
                 }
 
-
-                // Cadastro de e-book
                 composable("ebook_cadastrar") {
                     CadastrarEbookScreen(
                         onCancelar = { navController.popBackStack() },
-                        onPublicar = {
-                            navController.navigate("ebook_confirmar_publicacao")
-                        }
+                        onPublicar = { navController.navigate("ebook_confirmar_publicacao") }
                     )
                 }
 
-                // Detalhe do e-book
-                composable("ebook_detalhe/{id}") { backStackEntry ->
-                    val id = backStackEntry.arguments?.getString("id")?.toIntOrNull() ?: 0
+                composable("ebook_detalhe/{id}") { entry ->
+                    val id = entry.arguments?.getString("id")?.toIntOrNull() ?: 0
                     DetalheEbookScreen(
                         onAdicionarCarrinho = {
                             navController.navigate("ebook_carrinho")
@@ -292,7 +275,6 @@ fun AppContent() {
                     )
                 }
 
-                // Tela do carrinho
                 composable("ebook_carrinho") {
                     CarrinhoScreen(
                         onFinalizar = {

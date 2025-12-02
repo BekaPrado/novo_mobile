@@ -1,42 +1,36 @@
 package com.example.app_journey.screens
 
-import android.annotation.SuppressLint
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
-
 import com.example.app_journey.R
-import com.example.app_journey.model.Area
-import com.example.app_journey.model.Grupo
-import com.example.app_journey.model.Usuario
 import com.example.app_journey.service.RetrofitInstance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.material3.TopAppBar
 
-// ============================
-// CORES DO PADRÃO VISUAL
-// ============================
-private val RoxoPrimario = Color(0xFF4A39C7)
-private val RoxoEscuro = Color(0xFF341E9B)
-private val CinzaCard = Color(0xFFF4F5F8)
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,20 +43,17 @@ fun HomeGrupo(
     var carregandoDados by remember { mutableStateOf(true) }
     var erroMsg by remember { mutableStateOf<String?>(null) }
 
-    // ============================
-    // BUSCA DO GRUPO
-    // ============================
     LaunchedEffect(grupoId) {
         try {
             val response = withContext(Dispatchers.IO) {
                 RetrofitInstance.grupoService.getGrupoById(grupoId).execute()
             }
             if (response.isSuccessful) {
-                grupo = response.body()?.grupo
+                val wrapper = response.body()
+                grupo = response.body()?.grupos?.firstOrNull()
                     ?: run { erroMsg = "Grupo não encontrado"; null }
-            } else {
-                erroMsg = "Erro: ${response.code()}"
-            }
+
+            } else erroMsg = "Erro: ${response.code()}"
         } catch (e: Exception) {
             erroMsg = "Erro: ${e.localizedMessage}"
         } finally {
@@ -70,354 +61,146 @@ fun HomeGrupo(
         }
     }
 
-    val nome = grupo?.nome ?: ""
-    val descricao = grupo?.descricao ?: ""
+    val nome = grupo?.nome ?: "Grupo"
+    val descricao = grupo?.descricao ?: "Sem descrição"
     val imagem = grupo?.imagem ?: ""
     val membros = grupo?.limite_membros ?: 0
 
-    // ============================
-    // TELA
-    // ============================
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {},
+                title = { Text(nome, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Voltar",
-                            tint = RoxoEscuro
+                            tint = Color(0xFF341E9B)
                         )
                     }
                 }
             )
         }
     ) { padding ->
-
-        // BACKGROUND DA TELA
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
-                .paint(
-                    painterResource(id = R.drawable.background),
-                    contentScale = ContentScale.Crop
-                )
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState())
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Column(
+            if (carregandoDados) {
+                Spacer(modifier = Modifier.height(50.dp))
+                CircularProgressIndicator()
+                return@Column
+            }
+
+            if (erroMsg != null) {
+                Text(text = erroMsg!!, color = Color.Red, fontSize = 18.sp)
+                return@Column
+            }
+
+            // Card Principal
+            Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF2F2FF)),
+                elevation = CardDefaults.cardElevation(4.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
 
-                // ============================
-                // FEEDBACK DE ESTADO
-                // ============================
-                if (carregandoDados) {
-                    Spacer(Modifier.height(40.dp))
-                    CircularProgressIndicator(
-                        Modifier.align(Alignment.CenterHorizontally)
-                    )
-                    return@Column
-                }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = if (imagem.isNotEmpty()) rememberAsyncImagePainter(imagem)
+                            else painterResource(id = R.drawable.logoclaro),
+                            contentDescription = nome,
+                            modifier = Modifier
+                                .size(90.dp)
+                                .background(
+                                    Color(0xFFE0DFFF),
+                                    RoundedCornerShape(16.dp)
+                                )
+                                .padding(6.dp),
+                            contentScale = ContentScale.Crop
+                        )
 
-                if (erroMsg != null) {
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column {
+                            Text(
+                                text = nome,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E1E1E)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "$membros membros",
+                                fontSize = 16.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
                     Text(
-                        text = erroMsg!!,
-                        color = Color.Red,
+                        "Descrição do grupo",
+                        fontWeight = FontWeight.SemiBold,
                         fontSize = 18.sp,
-                        modifier = Modifier.padding(16.dp)
+                        color = Color(0xFF341E9B)
                     )
-                    return@Column
-                }
 
-                // ============================
-                // IMAGEM GRANDE TOPO
-                // ============================
-                Image(
-                    painter =
-                        if (imagem.isNotEmpty())
-                            rememberAsyncImagePainter(imagem)
-                        else painterResource(id = R.drawable.logoclaro),
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    contentScale = ContentScale.Crop,
-
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
-                        .graphicsLayer {
-                            alpha = 0.92f
-                        },
-
-                    contentDescription = nome
-                )
-
-
-                // ============================
-                // CARD PRINCIPAL
-                // ============================
-                Card(
-                    modifier = Modifier.padding(16.dp),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = CinzaCard
-                    ),
-                    elevation = CardDefaults.cardElevation(6.dp)
-                ) {
-
-                    Column(Modifier.padding(18.dp)) {
-
-                        Text(
-                            nome,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Spacer(Modifier.height(6.dp))
-
-                        Text(
-                            "$membros membros",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Divider()
-
-                        Spacer(Modifier.height(12.dp))
-
-                        // ============================
-                        // DESCRIÇÃO
-                        // ============================
-                        Text(
-                            "Descrição do grupo",
-                            fontWeight = FontWeight.SemiBold,
-                            color = RoxoEscuro
-                        )
-
-                        Spacer(Modifier.height(8.dp))
-
-                        Text(
-                            descricao,
-                            fontSize = 16.sp,
-                            lineHeight = 22.sp
-                        )
-
-                        Spacer(Modifier.height(24.dp))
-
-                        // ============================
-                        // BOTÕES (FUNCIONALIDADES)
-                        // ============================
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-
-                            Button(
-                                onClick = {
-                                    navController.navigate("chat_grupo/$grupoId")
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = RoxoPrimario
-                                )
-                            ) {
-                                Text(
-                                    "Chat",
-                                    color = Color.White,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    navController.navigate(
-                                        "calendario/${grupo?.id_grupo}/$idUsuario"
-                                    )
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = RoxoPrimario
-                                )
-                            ) {
-                                Text(
-                                    "Calendário",
-                                    color = Color.White,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun PreviewHomeGrupo_Completo() {
-
-    val fakeNav = rememberNavController()
-
-    // ============================
-    // MOCKS USANDO SEUS MODELS
-    // ============================
-
-    val areaMock = Area(
-        id_area = 1,
-        area = "Tecnologia da Informação"
-    )
-
-    val responsavelMock = Usuario(
-        id_usuario = 10,
-        nome_completo = "Gabriel Silva",
-        email = "gabriel@email.com",
-        data_nascimento = "2001-10-01",
-        foto_perfil = null,
-        descricao = "Dev Mobile Kotlin",
-        senha = "123456",
-        tipo_usuario = "ADMIN"
-    )
-
-    val grupoMock = Grupo(
-        id_grupo = 1,
-        nome = "Grupo de Desenvolvimento Mobile",
-        limite_membros = 128,
-        descricao = "Grupo focado em Kotlin, Jetpack Compose e desenvolvimento Android. " +
-                "Aqui discutimos projetos, estudos, desafios técnicos e boas práticas " +
-                "para evoluir no mobile.",
-        imagem = "",   // deixa vazio pra usar logo padrão
-        id_area = areaMock.id_area,
-        id_usuario = responsavelMock.id_usuario ?: 10
-    )
-
-    // ============================
-    // PREVIEW SEM RETROFIT
-    // ============================
-
-    Scaffold {
-
-        Box(
-            Modifier
-                .fillMaxSize()
-        ) {
-
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-
-                // Banner
-                Image(
-                    painter = painterResource(id = R.drawable.logoclaro),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp),
-                    contentScale = ContentScale.Crop,
-                    contentDescription = "Imagem Grupo"
-                )
-
-                Card(
-                    modifier = Modifier.padding(16.dp),
-                    shape = RoundedCornerShape(22.dp),
-                    elevation = CardDefaults.cardElevation(6.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F5F8))
-                ) {
-
-                    Column(
-                        modifier = Modifier.padding(18.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFDDD9FF), RoundedCornerShape(12.dp))
+                            .padding(12.dp)
                     ) {
+                        Text(text = descricao, fontSize = 16.sp)
+                    }
 
-                        Text(
-                            grupoMock.nome,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                        Spacer(Modifier.height(6.dp))
-
-                        Text(
-                            "${grupoMock.limite_membros} membros",
-                            color = Color.Gray
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Divider()
-
-                        Spacer(Modifier.height(12.dp))
-
-                        InfoPreview("Área", areaMock.area)
-                        InfoPreview("Responsável", responsavelMock.nome_completo)
-
-                        Spacer(Modifier.height(14.dp))
-
-                        Text(
-                            text = "Descrição",
-                            color = Color(0xFF341E9B),
-                            fontWeight = FontWeight.SemiBold
-                        )
-
-                        Spacer(Modifier.height(6.dp))
-
-                        Text(
-                            grupoMock.descricao,
-                            fontSize = 16.sp,
-                            lineHeight = 22.sp
-                        )
-
-                        Spacer(Modifier.height(22.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
+                    // BOTÕES
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(
+                            onClick = { navController.navigate("chat_grupo/${grupoId}") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A39C7))
                         ) {
+                            Text("Chat", color = Color.White, fontSize = 17.sp)
+                        }
 
-                            Button(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4A39C7)
-                                ),
-                                onClick = {}
-                            ) {
-                                Text(
-                                    "Chat",
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
+                        Spacer(modifier = Modifier.width(12.dp))
 
-                            Button(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(52.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4A39C7)
-                                ),
-                                onClick = {}
-                            ) {
-                                Text(
-                                    "Calendário",
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
+                        Button(
+                            onClick = {
+                                navController.navigate("calendario/${grupo?.id_grupo}/${idUsuario}")
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A39C7))
+                        ) {
+                            Text("Calendário", color = Color.White, fontSize = 17.sp)
                         }
                     }
                 }
@@ -426,17 +209,10 @@ fun PreviewHomeGrupo_Completo() {
     }
 }
 
-@Composable
-private fun InfoPreview(
-    titulo: String,
-    valor: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(titulo, color = Color.Gray, fontSize = 14.sp)
-        Text(valor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-    }
-}
 
+@Preview
+@Composable
+private fun Preview() {
+    val fakeNav = rememberNavController()
+    HomeGrupo(navController = fakeNav, idUsuario = 1, grupoId = 1)
+}

@@ -10,8 +10,10 @@ data class GruposResult(
 data class GrupoWrapper(
     val status: Boolean,
     val status_code: Int,
-    val grupo: Grupo?     // 👈 AGORA É UM OBJETO, NÃO UMA LISTA
+    val itens: Int,
+    val grupos: List<Grupo>
 )
+
 
 data class Grupo(
     val id_grupo: Int? = null,
