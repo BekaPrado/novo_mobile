@@ -17,6 +17,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun ChatGrupo(
@@ -33,13 +42,12 @@ fun ChatGrupo(
     var texto by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
-    // 1) Entrar na sala + carregar histórico
+    // ENTRAR NA SALA + HISTÓRICO
     LaunchedEffect(Unit) {
 
         SocketHandler.establishConnection()
         socket.emit("join_room", grupoId)
 
-        // BUSCAR HISTÓRICO
         try {
             val response = withContext(Dispatchers.IO) {
                 RetrofitInstance.mensagensService.getMensagensPorSala(grupoId)
@@ -47,16 +55,11 @@ fun ChatGrupo(
 
             if (response.isSuccessful) {
                 mensagens = response.body()?.mensagens ?: emptyList()
-                Log.d("ChatGrupo", "Histórico carregado: ${mensagens.size} msgs")
-            } else {
-                Log.e("ChatGrupo", "Erro ao carregar histórico: ${response.code()}")
             }
 
-        } catch (e: Exception) {
-            Log.e("ChatGrupo", "Erro histórico: ${e.message}")
-        }
+        } catch (_: Exception) {}
 
-        // LISTENER PARA RECEBER MENSAGENS AO VIVO
+        // RECEBIMENTO EM TEMPO REAL
         socket.on("receive_message") { data ->
             val json = data[0] as JSONObject
 
@@ -71,23 +74,54 @@ fun ChatGrupo(
                 id_chat = 0
             )
 
-            scope.launch {
-                mensagens = mensagens + msg
-            }
+            scope.launch { mensagens = mensagens + msg }
         }
     }
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Chat do Grupo", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate("home_grupo/$grupoId/$idUsuarioAtual")
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                    }
+                }
+            )
+        },
         bottomBar = {
-            Row(Modifier.padding(8.dp)) {
+            Row(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
 
-                TextField(
+                BasicTextField(
                     value = texto,
                     onValueChange = { texto = it },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    textStyle = TextStyle(fontSize = MaterialTheme.typography.bodyLarge.fontSize),
+                    decorationBox = { innerTextField ->
+                        if (texto.isEmpty()) {
+                            Text(
+                                "Digite uma mensagem...",
+                                color = Color.Gray
+                            )
+                        }
+                        innerTextField()
+                    }
                 )
 
-                Button(
+                Spacer(modifier = Modifier.width(10.dp))
+
+                IconButton(
                     onClick = {
                         if (texto.isNotBlank()) {
                             val payload = JSONObject().apply {
@@ -99,8 +133,7 @@ fun ChatGrupo(
                             socket.emit("send_message", payload)
                             texto = ""
                         }
-                    },
-                    modifier = Modifier.padding(start = 8.dp)
+                    }
                 ) {
                     Text("Enviar")
                 }
@@ -111,7 +144,8 @@ fun ChatGrupo(
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
+                .fillMaxSize(),
+            reverseLayout = false
         ) {
 
             items(mensagens) { msg ->
@@ -121,37 +155,46 @@ fun ChatGrupo(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(6.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     horizontalArrangement = if (isMine) Arrangement.End else Arrangement.Start
                 ) {
 
                     Box(
                         modifier = Modifier
-                            .widthIn(max = 260.dp)
-                            .background(
-                                if (isMine) MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-                                else MaterialTheme.colorScheme.secondary.copy(alpha = 0.35f),
-                                MaterialTheme.shapes.medium
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = 16.dp,
+                                    topEnd = 16.dp,
+                                    bottomStart = if (isMine) 16.dp else 0.dp,
+                                    bottomEnd = if (isMine) 0.dp else 16.dp
+                                )
                             )
-                            .padding(10.dp)
+                            .background(
+                                if (isMine) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                            )
+                            .padding(12.dp)
                     ) {
 
                         Column {
-                            // Nome do remetente (se não for você)
+
+                            // Nome do remetente
                             if (!isMine) {
                                 Text(
                                     text = "Usuário ${msg.id_usuario}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(bottom = 4.dp)
                                 )
                             }
 
-                            // Conteúdo da bolha
                             Text(
-                                text = msg.conteudo,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (isMine) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onSecondary
+                                msg.conteudo,
+                                color = if (isMine)
+                                    MaterialTheme.colorScheme.onPrimary
+                                else
+                                    MaterialTheme.colorScheme.onSecondary,
+                                style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
