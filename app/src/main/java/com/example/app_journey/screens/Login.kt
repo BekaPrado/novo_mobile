@@ -2,50 +2,58 @@
 
 package com.example.app_journey.screens
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import android.util.Log
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.app_journey.R
-import com.example.app_journey.model.LoginResponse
-import android.util.Log
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import com.example.app_journey.model.LoginRequest
+import com.example.app_journey.model.LoginResponse
 import com.example.app_journey.service.RetrofitFactory
 import com.example.app_journey.utils.SharedPrefHelper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import kotlin.random.Random
 
-private val PrimaryPurple = Color(0xFF341E9B)
+// =============== PALETA DE CORES ===============
+private val PrimaryPurple = Color(0xFF6C5CE7)
+private val PrimaryPurpleLight = Color(0xFF8577F5)
+private val AccentPurple = Color(0xFF9D8DF7)
+private val SoftPurple = Color(0xFFB4A7F8)
+private val CardWhite = Color(0xFFFFFFFF)
+private val BackgroundPurple = Color(0xFF7C6CF0)
+private val TextDark = Color(0xFF2D3748)
+private val TextGray = Color(0xFF718096)
+private val TextMuted = Color(0xFFA0AEC0)
+private val DividerColor = Color(0xFFE2E8F0)
+private val ErrorRed = Color(0xFFE53E3E)
 
 @Composable
 fun Login(navegacao: NavHostController?) {
@@ -54,251 +62,561 @@ fun Login(navegacao: NavHostController?) {
     val senha = remember { mutableStateOf("") }
     val context = LocalContext.current
     val erro = remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var senhaVisivel by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    val infiniteTransition = rememberInfiniteTransition(label = "login")
 
-        // --- Topo com Imagem de Fundo e Texto (Curvo) ---
+    val floatAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "float"
+    )
+
+    val bounce by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bounce"
+    )
+
+    val logoPulse by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "logoPulse"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(CardWhite)
+    ) {
+        // =============== HEADER COLORIDO ===============
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp)
-                .clip(RoundedCornerShape(bottomStart = 50.dp, bottomEnd = 50.dp)),
-            contentAlignment = Alignment.TopStart
-        ) {
-            // 1. Imagem preenchendo o Box (Fundo)
-            Image(
-                painter = painterResource(id = R.drawable.background),
-                contentDescription = "Fundo do Topo",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.matchParentSize()
-            )
-
-            // 2. Overlay (Opcional)
-            Box(
-                modifier = Modifier.matchParentSize().background(PrimaryPurple.copy(alpha = 0.3f))
-            )
-
-            // 3. Texto de Boas-Vindas
-            Column(
-                modifier = Modifier.padding(horizontal = 28.dp).padding(top = 80.dp)
-            ) {
-                Text(
-                    text = "Bem-vindo\nao Journey!",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    lineHeight = 36.sp,
+                .height(340.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            PrimaryPurple,
+                            BackgroundPurple,
+                            PrimaryPurpleLight
+                        )
+                    )
                 )
+        ) {
+            // Elementos decorativos
+            FloatingElements(floatAnim, bounce)
+
+            // =============== LOGO CENTRALIZADA ===============
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 60.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Glow atrás da logo
+                Box(
+                    modifier = Modifier
+                        .size(140.dp)
+                        .scale(logoPulse)
+                        .blur(40.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.4f),
+                                    Color.White.copy(alpha = 0.1f),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        )
+                )
+
+                // Container da logo
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .scale(logoPulse)
+                        .shadow(20.dp, CircleShape)
+                        .background(CardWhite, CircleShape)
+                        .border(
+                            width = 3.dp,
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    Color.White,
+                                    SoftPurple.copy(alpha = 0.5f)
+                                )
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.logoroxa),
+                        contentDescription = "Journey Logo",
+                        modifier = Modifier.size(70.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
         }
-        // --- Fim do Topo ---
 
-        // --- Container Principal e Campos de Texto (ANCORADO NA PARTE INFERIOR) ---
+        // =============== CARD PRINCIPAL ===============
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .statusBarsPadding()
         ) {
+            Spacer(modifier = Modifier.height(240.dp))
 
-            // PUSHES ALL CONTENT BELOW IT TO THE BOTTOM
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Espaçador para garantir que os campos fiquem abaixo da curva
-            Spacer(modifier = Modifier.height(100.dp))
-
-            // --- FORMULÁRIO ---
-
-            // ✅ RÓTULO DO EMAIL
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Email",
-                    color = PrimaryPurple,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp)) // Espaço entre o rótulo e o campo
-
-            // EMAIL FIELD
-            OutlinedTextField(
-                value = email.value,
-                onValueChange = { email.value = it },
-                placeholder = { Text("Seu email aqui", color = Color.Gray) },
-                singleLine = true,
-                leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryPurple)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(65.dp),
-                shape = RoundedCornerShape(14.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryPurple,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Color.Black,
-                    cursorColor = PrimaryPurple
-                )
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // ✅ RÓTULO DA SENHA
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    text = "Senha",
-                    color = PrimaryPurple,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.align(Alignment.CenterStart)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp)) // Espaço entre o rótulo e o campo
-
-            // SENHA FIELD
-            OutlinedTextField(
-                value = senha.value,
-                onValueChange = { senha.value = it },
-                placeholder = { Text("Sua senha secreta", color = Color.Gray) },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                leadingIcon = {
-                    Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryPurple)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(65.dp),
-                shape = RoundedCornerShape(14.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryPurple,
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedTextColor = Color.Black,
-                    cursorColor = PrimaryPurple
-                )
-            )
-
-            // Forgot password
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                horizontalArrangement = Arrangement.End
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
+                colors = CardDefaults.cardColors(containerColor = CardWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
-                Text(
-                    text="Esqueceu sua senha?",
-                    color = PrimaryPurple,
-                    fontSize = 13.sp,
-                    modifier = Modifier.clickable {
-                        navegacao?.navigate("recuperacao_senha")
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Título
+                    Text(
+                        text = "Entrar",
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Bem-vindo de volta ao Journey!",
+                        fontSize = 15.sp,
+                        color = TextGray
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // =============== CAMPO EMAIL ===============
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Email",
+                            fontSize = 14.sp,
+                            color = TextGray,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = email.value,
+                            onValueChange = { email.value = it },
+                            placeholder = {
+                                Text("Digite seu email", color = TextMuted)
+                            },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryPurple,
+                                unfocusedBorderColor = DividerColor,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedTextColor = TextDark,
+                                unfocusedTextColor = TextDark,
+                                cursorColor = PrimaryPurple
+                            )
+                        )
                     }
-                )
-            }
 
-            Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-            // Erro
-            erro.value?.let {
-                Text(it, color = Color.Red, fontSize = 14.sp, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                    // =============== CAMPO SENHA ===============
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "Senha",
+                            fontSize = 14.sp,
+                            color = TextGray,
+                            fontWeight = FontWeight.Medium
+                        )
 
-            // BOTÃO LOGIN
-            Button(
-                onClick = {
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    if (email.value.isBlank() || senha.value.isBlank()) {
-                        erro.value = "Preencha todos os campos"
-                        return@Button
+                        OutlinedTextField(
+                            value = senha.value,
+                            onValueChange = { senha.value = it },
+                            placeholder = {
+                                Text("Digite sua senha", color = TextMuted)
+                            },
+                            singleLine = true,
+                            visualTransformation = if (senhaVisivel)
+                                VisualTransformation.None
+                            else
+                                PasswordVisualTransformation(),
+                            trailingIcon = {
+                                Text(
+                                    text = if (senhaVisivel) "Ocultar" else "Mostrar",
+                                    color = PrimaryPurple,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier
+                                        .clickable { senhaVisivel = !senhaVisivel }
+                                        .padding(end = 4.dp)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryPurple,
+                                unfocusedBorderColor = DividerColor,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedTextColor = TextDark,
+                                unfocusedTextColor = TextDark,
+                                cursorColor = PrimaryPurple
+                            )
+                        )
                     }
 
-                    val usuarioService = RetrofitFactory().getUsuarioService()
-                    val loginRequest = LoginRequest(email.value, senha.value)
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    usuarioService.loginUsuario(loginRequest)
-                        .enqueue(object : Callback<LoginResponse> {
+                    // =============== BOTÃO LOGIN ===============
+                    Button(
+                        onClick = {
+                            if (email.value.isBlank() || senha.value.isBlank()) {
+                                erro.value = "Preencha todos os campos"
+                                return@Button
+                            }
 
-                            override fun onResponse(
-                                call: Call<LoginResponse>,
-                                response: Response<LoginResponse>
-                            ) {
-                                if (response.isSuccessful) {
-                                    val loginResponse = response.body()
+                            isLoading = true
+                            erro.value = null
 
-                                    if (loginResponse != null && loginResponse.status) {
+                            val usuarioService = RetrofitFactory().getUsuarioService()
+                            val loginRequest = LoginRequest(email.value, senha.value)
 
-                                        erro.value = null
-
-                                        // Salva dados no SharedPreferences
-                                        loginResponse.usuario?.let { usuario ->
-                                            SharedPrefHelper.salvarUsuario(context, usuario)
-                                            SharedPrefHelper.salvarIdUsuario(context, usuario.id)
-                                            SharedPrefHelper.salvarEmail(context, usuario.email)
-
-                                            Log.e("Login", "ID: ${usuario.id}")
+                            usuarioService.loginUsuario(loginRequest)
+                                .enqueue(object : Callback<LoginResponse> {
+                                    override fun onResponse(
+                                        call: Call<LoginResponse>,
+                                        response: Response<LoginResponse>
+                                    ) {
+                                        isLoading = false
+                                        if (response.isSuccessful) {
+                                            val loginResponse = response.body()
+                                            if (loginResponse != null && loginResponse.status) {
+                                                loginResponse.usuario?.let { usuario ->
+                                                    SharedPrefHelper.salvarUsuario(context, usuario)
+                                                    SharedPrefHelper.salvarIdUsuario(context, usuario.id)
+                                                    SharedPrefHelper.salvarEmail(context, usuario.email)
+                                                    Log.d("Login", "ID: ${usuario.id}")
+                                                }
+                                                navegacao?.navigate(
+                                                    "home/${SharedPrefHelper.recuperarIdUsuario(context)}"
+                                                ) {
+                                                    popUpTo("login") { inclusive = true }
+                                                }
+                                            } else {
+                                                erro.value = loginResponse?.message
+                                                    ?: "Email ou senha incorretos"
+                                            }
+                                        } else {
+                                            erro.value = "Erro ao fazer login"
                                         }
-
-                                        navegacao?.navigate(
-                                            "home/${SharedPrefHelper.recuperarIdUsuario(context)}"
-                                        ) {
-                                            popUpTo("login") { inclusive = true }
-                                        }
-
-                                    } else {
-                                        erro.value =
-                                            loginResponse?.message ?: "Email ou senha incorretos"
                                     }
 
-                                } else {
-                                    erro.value = "Erro ao fazer login: ${response.code()}"
-                                }
+                                    override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                                        isLoading = false
+                                        erro.value = "Erro de conexão"
+                                    }
+                                })
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(28.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PrimaryPurple
+                        ),
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text(
+                                "Entrar",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Esqueceu a senha
+                    Text(
+                        text = "Esqueceu sua senha?",
+                        color = PrimaryPurple,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable {
+                            navegacao?.navigate("recuperacao_senha")
+                        }
+                    )
+
+                    // Mensagem de erro
+                    erro.value?.let { errorMsg ->
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = errorMsg,
+                            color = ErrorRed,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // =============== BOTÕES SOCIAIS ===============
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { /* Login Google */ },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(25.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent
+                            ),
+                            border = BorderStroke(1.dp, DividerColor)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    "G",
+                                    color = Color(0xFFDB4437),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Google",
+                                    color = TextDark,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
+                        }
 
-                            override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
-                                erro.value = "Erro de rede: ${t.message}"
+                        OutlinedButton(
+                            onClick = { /* Login Facebook */ },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp),
+                            shape = RoundedCornerShape(25.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.Transparent
+                            ),
+                            border = BorderStroke(1.dp, DividerColor)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    "f",
+                                    color = Color(0xFF1877F2),
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "Facebook",
+                                    color = TextDark,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
-                        })
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
-            ) {
-                Text(
-                    "Entrar",
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    // Link de cadastro
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Não tem uma conta? ",
+                            color = TextGray,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = "Cadastre-se",
+                            color = PrimaryPurple,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                navegacao?.navigate("cadastro")
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
             }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text("ou", color = Color.Gray, fontSize = 13.sp)
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // BOTÃO SIGN UP
-            OutlinedButton(
-                onClick = { navegacao?.navigate("cadastro") },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryPurple),
-                border = BorderStroke(1.3.dp, PrimaryPurple)
-            ) {
-                Text("Criar sua conta", fontSize = 16.sp, fontWeight = FontWeight.Medium)
-            }
-
-            // Espaço de segurança no final
-            Spacer(modifier = Modifier.height(100.dp))
         }
     }
+}
+
+// =============== ELEMENTOS DECORATIVOS FLUTUANTES ===============
+@Composable
+private fun FloatingElements(animOffset: Float, bounce: Float) {
+    // Planeta laranja
+    Box(
+        modifier = Modifier
+            .offset(x = 40.dp, y = (50 + bounce).dp)
+            .size(45.dp)
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFFFFB347),
+                        Color(0xFFFF8C42)
+                    )
+                ),
+                CircleShape
+            )
+    )
+
+    // Anel do planeta
+    Box(
+        modifier = Modifier
+            .offset(x = 32.dp, y = (68 + bounce).dp)
+            .size(60.dp, 10.dp)
+            .background(
+                Color(0xFFFFD89B).copy(alpha = 0.5f),
+                RoundedCornerShape(5.dp)
+            )
+    )
+
+    // Lua azul
+    Box(
+        modifier = Modifier
+            .offset(x = 320.dp, y = (80 + bounce * 0.6f).dp)
+            .size(22.dp)
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF6366F1),
+                        Color(0xFF4F46E5)
+                    )
+                ),
+                CircleShape
+            )
+    )
+
+    // Estrelas
+    listOf(
+        Triple(160.dp, 45.dp, 6.dp),
+        Triple(280.dp, 120.dp, 5.dp),
+        Triple(60.dp, 140.dp, 4.dp),
+        Triple(220.dp, 60.dp, 5.dp),
+    ).forEach { (x, y, size) ->
+        Box(
+            modifier = Modifier
+                .offset(x = x, y = y)
+                .size(size)
+                .background(Color.White.copy(alpha = 0.7f), CircleShape)
+        )
+    }
+
+    // Cruz decorativa
+    Canvas(
+        modifier = Modifier
+            .offset(x = 130.dp, y = 150.dp)
+            .size(14.dp)
+    ) {
+        val strokeWidth = 2.dp.toPx()
+        val center = size.width / 2
+        drawLine(
+            color = Color.White.copy(alpha = 0.5f),
+            start = Offset(center, 0f),
+            end = Offset(center, size.height),
+            strokeWidth = strokeWidth
+        )
+        drawLine(
+            color = Color.White.copy(alpha = 0.5f),
+            start = Offset(0f, center),
+            end = Offset(size.width, center),
+            strokeWidth = strokeWidth
+        )
+    }
+
+    // Triângulo vermelho
+    Canvas(
+        modifier = Modifier
+            .offset(x = 300.dp, y = 40.dp)
+            .size(18.dp)
+            .graphicsLayer { rotationZ = animOffset * 0.05f }
+    ) {
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(size.width / 2, 0f)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        drawPath(
+            path = path,
+            color = Color(0xFFFF6B6B).copy(alpha = 0.8f)
+        )
+    }
+
+    // Círculo vazado
+    Box(
+        modifier = Modifier
+            .offset(x = 340.dp, y = 160.dp)
+            .size(14.dp)
+            .border(2.dp, Color.White.copy(alpha = 0.4f), CircleShape)
+    )
+
+    // Quadrado rotacionado
+    Box(
+        modifier = Modifier
+            .offset(x = 20.dp, y = (180 + bounce * 0.5f).dp)
+            .size(12.dp)
+            .graphicsLayer { rotationZ = 45f }
+            .background(Color(0xFFFF6B6B).copy(alpha = 0.6f), RoundedCornerShape(2.dp))
+    )
 }
 
 @Preview(showBackground = true, showSystemUi = true)
@@ -306,7 +624,3 @@ fun Login(navegacao: NavHostController?) {
 fun LoginPreview() {
     Login(navegacao = null)
 }
-
-
-
-
