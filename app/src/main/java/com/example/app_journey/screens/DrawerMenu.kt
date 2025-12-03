@@ -64,6 +64,7 @@ fun DrawerMenu(
         drawerContainerColor = Color.Transparent
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
+
             // =============== BACKGROUND GRADIENTE ===============
             Box(
                 modifier = Modifier
@@ -104,7 +105,8 @@ fun DrawerMenu(
                         .padding(20.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Foto do perfil
+
+                        // FOTO DO USUÁRIO
                         Box(
                             modifier = Modifier
                                 .size(60.dp)
@@ -124,7 +126,9 @@ fun DrawerMenu(
                                 )
                             } else {
                                 Text(
-                                    text = nomeUsuario.firstOrNull()?.uppercase() ?: "U",
+                                    text = nomeUsuario.firstOrNull()
+                                        ?.toString()
+                                        ?.uppercase() ?: "U",
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -148,7 +152,7 @@ fun DrawerMenu(
                                 color = Color.White.copy(alpha = 0.7f)
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            // Badge "Ver perfil"
+
                             Box(
                                 modifier = Modifier
                                     .background(
@@ -226,7 +230,7 @@ fun DrawerMenu(
                     text = "Conversas Privadas",
                     icon = Icons.Default.Email,
                     iconColor = AccentPink,
-                    badgeCount = 3, // Exemplo de notificação
+                    badgeCount = 3,
                     onClick = {
                         onOptionSelected("conversasPrivadas/$idUsuario")
                         onCloseDrawer()
@@ -295,7 +299,7 @@ fun DrawerMenu(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // =============== SEÇÃO PERIGO ===============
+                // =============== PERIGO ===============
                 DrawerMenuItem(
                     text = "Sair da Conta",
                     icon = Icons.Default.ExitToApp,
@@ -320,7 +324,6 @@ fun DrawerMenu(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Versão do app
                 Text(
                     text = "Journey v1.0.0",
                     fontSize = 12.sp,
@@ -417,7 +420,7 @@ private fun DrawerMenuItem(
             .padding(horizontal = 12.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Ícone com background
+
         Box(
             modifier = Modifier
                 .size(42.dp)
@@ -437,7 +440,6 @@ private fun DrawerMenuItem(
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        // Texto
         Text(
             text = text,
             color = textColor,
@@ -446,7 +448,6 @@ private fun DrawerMenuItem(
             modifier = Modifier.weight(1f)
         )
 
-        // Badge de notificação
         if (badgeCount > 0) {
             Box(
                 modifier = Modifier
@@ -464,7 +465,6 @@ private fun DrawerMenuItem(
             Spacer(modifier = Modifier.width(8.dp))
         }
 
-        // Seta
         Icon(
             Icons.Default.KeyboardArrowRight,
             contentDescription = null,
