@@ -38,7 +38,6 @@ import com.example.app_journey.model.AreaResult
 import com.example.app_journey.model.Grupo
 import com.example.app_journey.model.GruposResult
 import com.example.app_journey.service.RetrofitFactory
-import com.example.app_journey.utils.SharedPrefHelper
 import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
@@ -94,11 +93,6 @@ fun Home(navegacao: NavHostController, idUsuario: Int) {
 
     var categoriaSelecionada by remember { mutableStateOf("Todas") }
     var search by remember { mutableStateOf("") }
-
-    // Dados do usuário para o drawer (você pode buscar da API)
-    var nomeUsuario by remember { mutableStateOf("Usuário") }
-    var emailUsuario by remember { mutableStateOf("usuario@email.com") }
-    var fotoUsuario by remember { mutableStateOf<String?>(null) }
 
     // Carregar grupos
     LaunchedEffect(Unit) {
@@ -168,15 +162,11 @@ fun Home(navegacao: NavHostController, idUsuario: Int) {
         drawerContent = {
             DrawerMenu(
                 idUsuario = idUsuario,
-                nomeUsuario = nomeUsuario,
-                emailUsuario = emailUsuario,
-                fotoUsuario = fotoUsuario,
                 onOptionSelected = { route ->
                     scope.launch { drawerState.close() }
 
                     when (route) {
                         "logout" -> {
-                            // Limpar dados e ir para login
                             context.getSharedPreferences("app_journey_prefs", Context.MODE_PRIVATE)
                                 .edit()
                                 .clear()
@@ -186,7 +176,6 @@ fun Home(navegacao: NavHostController, idUsuario: Int) {
                             }
                         }
                         "apagar_perfil" -> {
-                            // Mostrar dialog de confirmação
                             Toast.makeText(context, "Função em desenvolvimento", Toast.LENGTH_SHORT).show()
                         }
                         else -> {

@@ -281,22 +281,7 @@ fun GrupoInfo(
                 }
 
                 // Badge de verificado (opcional - decorativo)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .offset(x = (-20).dp, y = (-5).dp)
-                        .size(36.dp)
-                        .background(SuccessGreen, CircleShape)
-                        .border(3.dp, CardWhite, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+
             }
 
             Spacer(modifier = Modifier.height(20.dp))

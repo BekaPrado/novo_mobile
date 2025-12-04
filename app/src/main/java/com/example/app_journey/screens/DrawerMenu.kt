@@ -16,20 +16,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 
 // =============== PALETA DE CORES ===============
 private val PrimaryPurple = Color(0xFF6C5CE7)
 private val PrimaryPurpleDark = Color(0xFF5849C2)
 private val AccentPurple = Color(0xFF8B7CF7)
-private val SoftPurple = Color(0xFFE8E5FF)
-private val CardWhite = Color(0xFFFFFFFF)
-private val TextDark = Color(0xFF1A1A2E)
 private val AccentGreen = Color(0xFF10B981)
 private val AccentBlue = Color(0xFF3B82F6)
 private val AccentOrange = Color(0xFFFF9F43)
@@ -41,9 +36,6 @@ private val AccentYellow = Color(0xFFF59E0B)
 @Composable
 fun DrawerMenu(
     idUsuario: Int,
-    nomeUsuario: String = "Usuário",
-    emailUsuario: String = "usuario@email.com",
-    fotoUsuario: String? = null,
     onOptionSelected: (String) -> Unit,
     onCloseDrawer: () -> Unit = {}
 ) {
@@ -90,88 +82,7 @@ fun DrawerMenu(
                     .verticalScroll(rememberScrollState())
                     .padding(20.dp)
             ) {
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // =============== HEADER DO PERFIL ===============
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
-                        .clickable {
-                            onOptionSelected("perfil/$idUsuario")
-                            onCloseDrawer()
-                        }
-                        .padding(20.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-
-                        // FOTO DO USUÁRIO
-                        Box(
-                            modifier = Modifier
-                                .size(60.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.2f))
-                                .border(2.dp, Color.White.copy(alpha = 0.5f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (fotoUsuario != null) {
-                                AsyncImage(
-                                    model = fotoUsuario,
-                                    contentDescription = "Foto",
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(56.dp)
-                                        .clip(CircleShape)
-                                )
-                            } else {
-                                Text(
-                                    text = nomeUsuario.firstOrNull()
-                                        ?.toString()
-                                        ?.uppercase() ?: "U",
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = nomeUsuario,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = emailUsuario,
-                                fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.7f)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        Color.White.copy(alpha = 0.2f),
-                                        RoundedCornerShape(12.dp)
-                                    )
-                                    .padding(horizontal = 10.dp, vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "Ver perfil →",
-                                    fontSize = 11.sp,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(40.dp))
 
                 // =============== SEÇÃO PRINCIPAL ===============
                 DrawerSectionTitle("PRINCIPAL")
@@ -479,9 +390,6 @@ private fun DrawerMenuItem(
 fun PreviewDrawerMenu() {
     DrawerMenu(
         idUsuario = 1,
-        nomeUsuario = "João Silva",
-        emailUsuario = "joao@email.com",
-        fotoUsuario = null,
         onOptionSelected = {},
         onCloseDrawer = {}
     )

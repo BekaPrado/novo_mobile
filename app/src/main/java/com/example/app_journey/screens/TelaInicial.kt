@@ -295,43 +295,7 @@ fun TelaInicial(navController: NavHostController) {
                 horizontalAlignment = Alignment.Start
             ) {
                 // Badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    VibrantPurple.copy(alpha = 0.2f),
-                                    ElectricBlue.copy(alpha = 0.15f)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    VibrantPurple.copy(alpha = 0.5f),
-                                    ElectricBlue.copy(alpha = 0.3f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "🚀",
-                            fontSize = 14.sp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Comece sua jornada",
-                            fontSize = 13.sp,
-                            color = SoftLavender,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+
 
                 Spacer(modifier = Modifier.height(24.dp))
 

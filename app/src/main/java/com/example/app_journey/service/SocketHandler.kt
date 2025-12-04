@@ -9,7 +9,7 @@ object SocketHandler {
 
     fun setSocket() {
         try {
-            socket = IO.socket("http://192.168.56.1:3030")
+            socket = IO.socket("http://192.168.56.1:7070")
         } catch (e: URISyntaxException) {
             throw RuntimeException(e)
         }
